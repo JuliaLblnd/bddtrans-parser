@@ -1,0 +1,22 @@
+{
+    "name": "julialblnd/bddtrans-parser",
+    "description": "Parseur pour le site BDDTrans",
+    "license": "The Unlicense",
+    "authors": [
+        {
+            "name": "Julia Leblond",
+            "email": "JuliaLblnd@users.noreply.github.com"
+        }
+    ],
+    "require": {
+        "google/apiclient": "^2.7"
+    },
+    "scripts": {
+        "post-update-cmd": "Google_Task_Composer::cleanup"
+    },
+    "extra": {
+        "google/apiclient-services": [
+            "Sheets"
+        ]
+    }
+}

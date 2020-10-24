@@ -1,0 +1,103 @@
+<?php
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/functions.php';
+
+if (php_sapi_name() != 'cli') {
+	throw new Exception('This application must be run on the command line.');
+}
+
+$jsonfile = __DIR__ . '/public/bddtrans.json';
+$csvfile  = __DIR__ . '/public/bddtrans.csv';
+$spreadsheetId = '1YQ8dqvAOq183qseB3lpDCP3oh4ogeIiD1P9SMVwdtTI';
+$base_url = 'https://bddtrans.fr';
+
+$categories = array(
+	"generalistes",
+	"endocrinologues",
+	"psy",
+	"voix",
+	"chirugiens",
+	"gynecologues",
+	"dermato",
+	"avocats",
+	"autres",
+);
+
+$praticiens = array();
+
+foreach ($categories as $category) {
+	for ($i=1; $i < 5; $i++) {
+		$url = $base_url . '/' . $category . '-' . $i . '/';
+		$html = urlopen($url);
+		$timeout = 0;
+		while (empty($html) && $timeout++ < 5) {
+			usleep(100 * 1000); // Sleep fo 100 milliseconds
+			$html = urlopen($url);
+		}
+		$xpath = getHtmlDomXPath($html);
+		$summ_prat = $xpath->query("//div[@class='summ_prat']");
+
+		if ($summ_prat->length == 0) {
+			break;
+		}
+
+		foreach ($summ_prat as $prat) {
+			$infos = $xpath->query("p[@class='view_prat']/strong", $prat);
+
+			$description = $xpath->query("p[@class='view_prat']/span[@class='description']", $prat);
+			$description = $description->item(0)->nodeValue;
+			$description = trim(preg_replace('/\s+/', ' ', $description));
+
+			$link = $xpath->query("p[@class='view_prat_link']/a", $prat)->item(0);
+			$link = $link->getAttribute("href");
+
+			preg_match('/^.*\/(.*)\.html/', $link, $bddtrans_id);
+			$bddtrans_id = $bddtrans_id[1];
+
+			$link = preg_replace('/^\.+/', $base_url, $link);
+
+			$tags_dom = $xpath->query("p[@class='view_prat_tag']/span", $prat);
+			$tags = array();
+			foreach ($tags_dom as $tag) {
+				array_push($tags, $tag->nodeValue);
+			}
+			$tags = implode(', ', $tags);
+
+			$new_prat = array(
+				"specialite" => $tags,
+				"nom" => $infos->item(0)->nodeValue,
+				"prenom" => $infos->item(1)->nodeValue,
+				"adresse" => $infos->item(2)->nodeValue,
+				"code postal" => $infos->item(3)->nodeValue,
+				"ville" => $infos->item(4)->nodeValue,
+				"pays" => $infos->item(5)->nodeValue,
+				"description" => $description,
+				"lien" => $link,
+				"categorie" => $category,
+				"bddtrans_id" => $bddtrans_id
+			);
+
+			array_push($praticiens, $new_prat);
+		}
+	}
+}
+// $praticiens = array_unique($praticiens);
+
+$praticiens_values = array();
+$header = false;
+$fp = fopen($csvfile, 'w');
+foreach ($praticiens as $row) {
+	if (empty($header)) {
+		$header = array_keys($row);
+		array_push($praticiens_values, $header);
+		fputcsv($fp, $header);
+		$header = array_flip($header);
+	}
+	array_push($praticiens_values, array_values($row));
+	fputcsv($fp, array_merge($header, $row));
+}
+fclose($fp);
+
+file_put_contents($jsonfile, json_encode($praticiens));
+
+updateGoogleSheet($spreadsheetId, $praticiens_values);
