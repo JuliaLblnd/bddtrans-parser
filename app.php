@@ -6,9 +6,11 @@ if (php_sapi_name() != 'cli') {
 	throw new Exception('This application must be run on the command line.');
 }
 
-$jsonfile = __DIR__ . '/public/bddtrans.json';
-$csvfile  = __DIR__ . '/public/bddtrans.csv';
-$spreadsheetId = '1YQ8dqvAOq183qseB3lpDCP3oh4ogeIiD1P9SMVwdtTI';
+$opts = getopt('o:s:');
+$output_dir = (isset($opts['o'])) ? $opts['o'] : __DIR__;
+$spreadsheetId = (isset($opts['s'])) ? $opts['s'] : null;
+$jsonfile = $output_dir . '/bddtrans.json';
+$csvfile  = $output_dir . '/bddtrans.csv';
 $base_url = 'https://bddtrans.fr';
 
 $categories = array(
@@ -100,4 +102,6 @@ fclose($fp);
 
 file_put_contents($jsonfile, json_encode($praticiens));
 
-updateGoogleSheet($spreadsheetId, $praticiens_values);
+if (isset($spreadsheetId)) {
+	updateGoogleSheet($spreadsheetId, $praticiens_values);
+}
