@@ -85,6 +85,11 @@ foreach ($categories as $category) {
 }
 // $praticiens = array_unique($praticiens);
 
+if (sizeof($praticiens) <= 1) {
+	echo "No data";
+	exit(1);
+}
+
 $praticiens_values = array();
 $header = false;
 $fp = fopen($csvfile, 'w');
