@@ -59,9 +59,10 @@ function getClient()
  * cURL: http://php.net/manual/en/book.curl.php
  * cURL Options: http://www.php.net/manual/en/function.curl-setopt.php
  * @param $url URL of the request
+ * @param $token Login token
  * @return String The page content
  */
-function urlopen($url)
+function urlopen($url, $token = null)
 {        
 	$curl_handler = curl_init();
 	$options = array(CURLOPT_URL => $url,
@@ -71,10 +72,42 @@ function urlopen($url)
 					 CURLOPT_POST => true
 					 );
 	curl_setopt_array($curl_handler, $options);
+	if ($token) {
+		curl_setopt($curl_handler, CURLOPT_COOKIE, "token=$token");
+	}
 	$result = curl_exec($curl_handler);
 	curl_close($curl_handler);
 	
 	return $result;
+}
+
+/**
+ * Return token from Login Cookies
+ * cURL: http://php.net/manual/en/book.curl.php
+ * cURL Options: http://www.php.net/manual/en/function.curl-setopt.php
+ * @param $url URL of the request
+ * @param $login Login for connexion to site
+ * @param $password Password for connexion to site
+ * @return String The token
+ */
+function getLoginToken($url, $login, $password)
+{        
+	$curl_handler = curl_init();
+	$options = array(CURLOPT_URL => $url,
+					 CURLOPT_FAILONERROR => true,
+					 CURLOPT_RETURNTRANSFER => true,
+					 CURLOPT_TIMEOUT => 3,
+					 CURLOPT_POST => true,
+					 CURLOPT_HEADER => true,
+					 CURLOPT_POSTFIELDS => "pseudoco=$login&pwdco=$password",
+					 CURLOPT_HTTPHEADER => array('Content-Type: application/x-www-form-urlencoded')
+					 );
+	curl_setopt_array($curl_handler, $options);
+	$result = curl_exec($curl_handler);
+	curl_close($curl_handler);
+	
+	preg_match('/^Set-Cookie:.*token=([a-zA-Z0-9]{64});/mi', $result, $matches);
+	return $matches[1];
 }
 
 /**
