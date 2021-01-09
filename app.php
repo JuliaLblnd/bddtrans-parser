@@ -13,6 +13,10 @@ $jsonfile = $output_dir . '/bddtrans.json';
 $csvfile  = $output_dir . '/bddtrans.csv';
 $base_url = 'https://bddtrans.fr';
 
+if (!is_dir($output_dir)) {
+	exit("Directory '$output_dir' does not exit.");
+}
+
 $categories = array(
 	"generalistes",
 	"endocrinologues",
