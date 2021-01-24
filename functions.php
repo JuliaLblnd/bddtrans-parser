@@ -111,6 +111,32 @@ function getLoginToken($url, $login, $password)
 }
 
 /**
+ * Return the comments for the specified page
+ * @param $url URL of the page
+ * @param $token Login token
+ * @return Array All comments
+ */
+function getComments($url, $token)
+{        
+	$html = urlopen($url, $token);
+	$xpath = getHtmlDomXPath($html);
+	$view_com = $xpath->query("//div[@class='view_com']");
+
+	$comments = array();
+
+	foreach ($view_com as $com) {
+		$tag = $xpath->query("p[@class='view_com_tag']/span", $com)->item(0)->textContent;
+		$body = $xpath->query("p[@class='view_com_body']", $com)->item(0)->textContent;
+		array_push($comments, array(
+			'tag' => $tag,
+			'body' => ($body)
+		));
+	}
+	
+	return $comments;
+}
+
+/**
  * @param $html
  * @return DOMXpath
  */
