@@ -1,5 +1,4 @@
 <?php
-require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/functions.php';
 
 if (php_sapi_name() != 'cli') {
@@ -96,7 +95,7 @@ foreach ($categories as $category) {
 // $praticiens = array_unique($praticiens);
 
 if (sizeof($praticiens) <= 1) {
-	echo "No data";
+	echo "No data\n";
 	exit(1);
 }
 
@@ -118,5 +117,14 @@ foreach ($praticiens as $row) {
 fclose($fp);
 
 if (isset($spreadsheetId)) {
-	updateGoogleSheet($spreadsheetId, $praticiens_values);
+	$autoloader = __DIR__ . '/vendor/autoload.php';
+	if (file_exists($autoloader)) {
+		require $autoloader;
+		updateGoogleSheet($spreadsheetId, $praticiens_values);
+	}
+	else {
+		echo "Dependencies not installed.\n";
+		echo "Try to run \"composer install\".\n";
+		exit(1);
+	}
 }
