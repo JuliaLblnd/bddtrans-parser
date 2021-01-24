@@ -3,8 +3,10 @@ BDDTrans Parser
 
 Parseur pour le site BDDTrans qui extrait les praticiens en JSON et CSV.
 
-Install dependencies
+Install dependencies (optional)
 --------------------
+
+The only dependency is the Google API Client, which is not required if you will not use the Google Spreadsheet Update functionality.
 
 ```bash
 composer install
