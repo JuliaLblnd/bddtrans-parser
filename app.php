@@ -52,10 +52,15 @@ foreach ($categories as $category) {
 
 			$description = $xpath->query("p[@class='view_prat']/span[@class='description']", $prat);
 			$description = $description->item(0)->nodeValue;
-			$description = trim(preg_replace('/\s+/', ' ', $description));
+			$description = trim($description);
+			// $description = trim(preg_replace('/\s+/', ' ', $description));
 
 			$link = $xpath->query("p[@class='view_prat_link']/a", $prat)->item(0);
 			$link = $link->getAttribute("href");
+
+			$comments = $xpath->query("p[@class='view_prat_link']/a", $prat)->item(1)->textContent;
+			preg_match('/\((\d+)\)$/', $comments, $comments);
+			$comments = intval($comments[1]);
 
 			preg_match('/^.*\/(.*)\.html/', $link, $bddtrans_id);
 			$bddtrans_id = $bddtrans_id[1];
@@ -79,6 +84,7 @@ foreach ($categories as $category) {
 				"pays" => $infos->item(5)->nodeValue,
 				"description" => $description,
 				"lien" => $link,
+				"commentaires" => $comments,
 				"categorie" => $category,
 				"bddtrans_id" => $bddtrans_id
 			);
@@ -94,6 +100,8 @@ if (sizeof($praticiens) <= 1) {
 	exit(1);
 }
 
+file_put_contents($jsonfile, json_encode($praticiens, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+
 $praticiens_values = array();
 $header = false;
 $fp = fopen($csvfile, 'w');
@@ -108,8 +116,6 @@ foreach ($praticiens as $row) {
 	fputcsv($fp, array_merge($header, $row));
 }
 fclose($fp);
-
-file_put_contents($jsonfile, json_encode($praticiens));
 
 if (isset($spreadsheetId)) {
 	updateGoogleSheet($spreadsheetId, $praticiens_values);
