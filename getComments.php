@@ -51,7 +51,7 @@ if (!file_exists($commentsDbFile)) {
 
 $commentsDB = json_decode(file_get_contents($commentsDbFile), true);
 
-if (!isset($commentsDB[$bddtrans_id]) || $commentsDB[$bddtrans_id]['updated'] < ($time - (60 * 60 * 48))) {
+if (!isset($commentsDB[$bddtrans_id]) || $commentsDB[$bddtrans_id]['updated'] < ($time - (60 * 60 * 48)) || empty($commentsDB[$bddtrans_id]['comments'])) {
 	$token = $bddtrans_credentials['token'];
 	$url = $base_url . '/' . $categorie . '/' . $bddtrans_id . '.html';
 
