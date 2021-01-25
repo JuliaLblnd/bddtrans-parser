@@ -9,14 +9,14 @@ $time = time();
 
 $defaultOptions = [
 	'categorie' => 'autres',
-	'bddtrans_id' => '',
+	'slug' => '',
 	'format' => 'json'
 ];
 $options = [];
 if (php_sapi_name() == 'cli') {
 	$options = getopt('', [
 		'categorie:',
-		'bddtrans_id:',
+		'slug:',
 		'format::'
 	]);
 }
@@ -24,7 +24,7 @@ if (php_sapi_name() == 'cli') {
 $options = array_merge($defaultOptions, $_GET, $options);
 
 $categorie = $options['categorie'];
-$bddtrans_id = $options['bddtrans_id'];
+$slug = $options['slug'];
 $format = $options['format'];
 
 $bddtrans_credentials = [
@@ -53,22 +53,22 @@ if (!file_exists($commentsDbFile)) {
 $commentsDB = json_decode(file_get_contents($commentsDbFile), true);
 
 if (
-	empty($commentsDB[$bddtrans_id])
-	OR $commentsDB[$bddtrans_id]['updated'] < ($time - (60 * 60 * 48))
-	OR empty($commentsDB[$bddtrans_id]['comments'])
+	empty($commentsDB[$slug])
+	OR $commentsDB[$slug]['updated'] < ($time - (60 * 60 * 48))
+	OR empty($commentsDB[$slug]['comments'])
 ) {
 	$token = $bddtrans_credentials['token'];
-	$url = $base_url . '/' . $categorie . '/' . $bddtrans_id . '.html';
+	$url = $base_url . '/' . $categorie . '/' . $slug . '.html';
 
-	$commentsDB[$bddtrans_id]['comments'] = getComments($url, $token);
-	$commentsDB[$bddtrans_id]['updated'] = $time;
+	$commentsDB[$slug]['comments'] = getComments($url, $token);
+	$commentsDB[$slug]['updated'] = $time;
 	file_put_contents($commentsDbFile, json_encode($commentsDB, $json_flags));
 }
 
-$comments = $commentsDB[$bddtrans_id]['comments'];
+$comments = $commentsDB[$slug]['comments'];
 
 if ($format == "json") {
-	$comments = empty($bddtrans_id) ? $commentsDB : $comments;
+	$comments = empty($slug) ? $commentsDB : $comments;
 	header('Content-Type: application/json');
 	echo json_encode(empty($comments) ? [] : $comments, $json_flags);
 }

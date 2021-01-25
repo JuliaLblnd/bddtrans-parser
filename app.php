@@ -61,8 +61,8 @@ foreach ($categories as $category) {
 			preg_match('/\((\d+)\)$/', $comments, $comments);
 			$comments = intval($comments[1]);
 
-			preg_match('/^.*\/(.*)\.html/', $link, $bddtrans_id);
-			$bddtrans_id = $bddtrans_id[1];
+			preg_match('/^.*\/(.*)\.html/', $link, $slug);
+			$slug = $slug[1];
 
 			$link = preg_replace('/^\.+/', $base_url, $link);
 
@@ -85,7 +85,7 @@ foreach ($categories as $category) {
 				"lien" => $link,
 				"commentaires" => $comments,
 				"categorie" => $category,
-				"bddtrans_id" => $bddtrans_id
+				"slug" => $slug
 			);
 
 			array_push($praticiens, $new_prat);
