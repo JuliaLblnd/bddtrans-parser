@@ -13,7 +13,7 @@ $csvfile  = $output_dir . '/bddtrans.csv';
 $base_url = 'https://bddtrans.fr';
 
 if (!is_dir($output_dir)) {
-	exit("Directory '$output_dir' does not exit.");
+	throw new Exception("Directory '$output_dir' does not exist.");
 }
 
 $categories = array(
@@ -94,10 +94,8 @@ foreach ($categories as $category) {
 }
 // $praticiens = array_unique($praticiens);
 
-if (sizeof($praticiens) <= 1) {
-	echo "No data\n";
-	exit(1);
-}
+if (sizeof($praticiens) <= 1)
+	throw new Exception("No data");
 
 file_put_contents($jsonfile, json_encode($praticiens, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
 
@@ -122,9 +120,6 @@ if (isset($spreadsheetId)) {
 		require $autoloader;
 		updateGoogleSheet($spreadsheetId, $praticiens_values);
 	}
-	else {
-		echo "Dependencies not installed.\n";
-		echo "Try to run \"composer install\".\n";
-		exit(1);
-	}
+	else
+		throw new Exception("Dependencies not installed.\nTry to run \"composer install\".");
 }
