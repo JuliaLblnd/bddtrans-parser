@@ -5,6 +5,8 @@ $base_url = 'https://bddtrans.fr';
 $credentialsPath = __DIR__ . '/bddtrans_credentials.json';
 $commentsDbFile = __DIR__ . '/bddtrans_comments.json';
 $json_flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT;
+$token_max_age = 60 * 12; // Max age of token in minutes
+$comments_max_age = 60 * 48; // Max age of comments in minutes
 $time = time();
 
 $defaultOptions = [
@@ -36,25 +38,31 @@ if (file_exists($credentialsPath)) {
 }
 if (empty($bddtrans_credentials['pseudo']) || empty($bddtrans_credentials['password'])) {
 	file_put_contents($credentialsPath, json_encode($bddtrans_credentials, $json_flags));
-	echo 'Remplire le fichier '.basename($credentialsPath).'.';
-	exit(1);
+	error_log('No credentials provided! Check file ' . $credentialsPath);
+	throw new Exception("No credentials provided!");
+	
 }
-if (empty($bddtrans_credentials['token']) || $bddtrans_credentials['token_expires'] > $time) {
+$token_age = ($time - $bddtrans_credentials['token_created']) / 60;
+if (
+		empty($bddtrans_credentials['token'])
+		OR $token_age > $token_max_age
+		OR !checkLoginStatus($base_url, $bddtrans_credentials['token'])
+	) {
 	$login_url = $base_url.'/userpanel/connexion.php';
 	$bddtrans_credentials['token'] = getLoginToken($login_url, $bddtrans_credentials['pseudo'], $bddtrans_credentials['password']);
-	$bddtrans_credentials['token_expires'] = ($time + (60 * 60 * 10)); // Token expires in 10 hours
+	$bddtrans_credentials['token_created'] = $time;
 	file_put_contents($credentialsPath, json_encode($bddtrans_credentials, $json_flags));
+	error_log("Token expired after $token_age minutes. New token: " . $bddtrans_credentials['token']);
 }
 
 if (!file_exists($commentsDbFile)) {
 	file_put_contents($commentsDbFile, json_encode([], $json_flags));
 }
-
 $commentsDB = json_decode(file_get_contents($commentsDbFile), true);
 
 if (
 	empty($commentsDB[$slug])
-	OR $commentsDB[$slug]['updated'] < ($time - (60 * 60 * 48))
+	OR $commentsDB[$slug]['updated'] < ($time - (60 * $comments_max_age))
 	OR empty($commentsDB[$slug]['comments'])
 ) {
 	$token = $bddtrans_credentials['token'];
@@ -63,6 +71,7 @@ if (
 	$commentsDB[$slug]['comments'] = getComments($url, $token);
 	$commentsDB[$slug]['updated'] = $time;
 	file_put_contents($commentsDbFile, json_encode($commentsDB, $json_flags));
+	error_log('Retrieving comments for ' . $slug);
 }
 
 $comments = $commentsDB[$slug]['comments'];
