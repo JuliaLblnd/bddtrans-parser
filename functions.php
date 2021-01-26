@@ -111,6 +111,25 @@ function getLoginToken($url, $login, $password)
 }
 
 /**
+ * Check for login status with the provided token
+ * @param $base_url Base URL of the site
+ * @param $token Login token
+ * @return Bool, True if logged in, False otherwise
+ */
+function checkLoginStatus($base_url, $token)
+{        
+	$html = urlopen($base_url . '/accueil/', $token);
+	$xpath = getHtmlDomXPath($html);
+	$connexion_links = $xpath->query("//div[@class='col_right']/a[@class='connexion']");
+	$connexion_link = $connexion_links->item(0)->getAttribute("href");
+
+	if ($connexion_link == '../userpanel/') {
+		return true;
+	}
+	return false;
+}
+
+/**
  * Return the comments for the specified page
  * @param $url URL of the page
  * @param $token Login token
