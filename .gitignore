@@ -3,3 +3,5 @@ composer.lock
 tests
 credentials.json
 token.json
+bddtrans_comments.json
+bddtrans_credentials.json

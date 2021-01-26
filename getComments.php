@@ -60,26 +60,27 @@ if (!file_exists($commentsDbFile)) {
 }
 $commentsDB = json_decode(file_get_contents($commentsDbFile), true);
 
-if (
-	empty($commentsDB[$slug])
-	OR $commentsDB[$slug]['updated'] < ($time - (60 * $comments_max_age))
-	OR empty($commentsDB[$slug]['comments'])
-) {
-	$token = $bddtrans_credentials['token'];
-	$url = $base_url . '/' . $categorie . '/' . $slug . '.html';
+$comments = [];
+if (!empty($slug)) {
+	if (
+		empty($commentsDB[$slug])
+		OR $commentsDB[$slug]['updated'] < ($time - (60 * $comments_max_age))
+		OR empty($commentsDB[$slug]['comments'])
+	) {
+		$token = $bddtrans_credentials['token'];
+		$url = $base_url . '/' . $categorie . '/' . $slug . '.html';
 
-	$commentsDB[$slug]['comments'] = getComments($url, $token);
-	$commentsDB[$slug]['updated'] = $time;
-	file_put_contents($commentsDbFile, json_encode($commentsDB, $json_flags));
-	error_log('Retrieving comments for ' . $slug);
+		$commentsDB[$slug]['comments'] = getComments($url, $token);
+		$commentsDB[$slug]['updated'] = $time;
+		file_put_contents($commentsDbFile, json_encode($commentsDB, $json_flags));
+		error_log('Retrieving comments for ' . $slug);
+	}
+	$comments = $commentsDB[$slug]['comments'];
 }
 
-$comments = $commentsDB[$slug]['comments'];
-
 if ($format == "json") {
-	$comments = empty($slug) ? $commentsDB : $comments;
 	header('Content-Type: application/json');
-	echo json_encode(empty($comments) ? [] : $comments, $json_flags);
+	echo json_encode(empty($slug) ? $commentsDB : $comments, $json_flags);
 }
 else {
 	if (sizeof($comments) >= 1) {
