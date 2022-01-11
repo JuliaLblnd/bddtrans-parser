@@ -84,6 +84,7 @@ if ($format == "json") {
 }
 else {
 	if (sizeof($comments) >= 1) {
+		echo '<div class="well well-sm">Derniere mise à jour de ces commentaires le '.date("d/m/Y à H:i:s", $commentsDB[$slug]['updated']).'</div>';
 		foreach ($comments as $com) {
 			echo '<div class="panel panel-default">';
 			echo '<div class="panel-heading">'.$com['tag'].'</div>';
