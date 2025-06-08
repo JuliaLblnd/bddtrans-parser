@@ -31,7 +31,7 @@ $categories = array(
 $praticiens = array();
 
 foreach ($categories as $category) {
-	for ($i=1; $i < 5; $i++) {
+	for ($i=1; $i < 10; $i++) {
 		$url = $base_url . '/' . $category . '-' . $i . '/';
 		$html = urlopen($url);
 		$timeout = 0;
