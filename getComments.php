@@ -29,30 +29,35 @@ $categorie = $options['categorie'];
 $slug = $options['slug'];
 $format = $options['format'];
 
+if (empty($slug) || empty($categorie)) {
+	echo 'Missing parameter `slug` or `categorie`';
+	exit;
+}
+
 $bddtrans_credentials = [
 	'pseudo'       => '',
 	'password'     => ''
 ];
-if (file_exists($credentialsPath)) {
-	$bddtrans_credentials = json_decode(file_get_contents($credentialsPath), true);
+if (!file_exists($credentialsPath)) {
+	file_put_contents($credentialsPath, json_encode($bddtrans_credentials, $json_flags));
 }
+$bddtrans_credentials = json_decode(file_get_contents($credentialsPath), true);
 if (empty($bddtrans_credentials['pseudo']) || empty($bddtrans_credentials['password'])) {
-	file_put_contents($credentialsPath, json_encode($bddtrans_credentials, $json_flags));
 	error_log('No credentials provided! Check file ' . $credentialsPath);
-	throw new Exception("No credentials provided!");
-	
 }
-$token_age = ($time - $bddtrans_credentials['token_created']) / 60;
-if (
-		empty($bddtrans_credentials['token'])
-		OR $token_age > $token_max_age
-		OR !checkLoginStatus($base_url, $bddtrans_credentials['token'])
-	) {
+
+$token = $bddtrans_credentials['token'] ?? false;
+$token_created = $bddtrans_credentials['token_created'] ?? 0;
+$token_age = ($time - $token_created) / 60;
+if ($token_age > $token_max_age || !checkLoginStatus($base_url, $token)) {
 	$login_url = $base_url.'/userpanel/connexion.php';
-	$bddtrans_credentials['token'] = getLoginToken($login_url, $bddtrans_credentials['pseudo'], $bddtrans_credentials['password']);
-	$bddtrans_credentials['token_created'] = $time;
-	file_put_contents($credentialsPath, json_encode($bddtrans_credentials, $json_flags));
-	error_log("Token expired after $token_age minutes. New token: " . $bddtrans_credentials['token']);
+	$token = getLoginToken($login_url, $bddtrans_credentials['pseudo'], $bddtrans_credentials['password']);
+	if (!empty($token)) {
+		$bddtrans_credentials['token'] = $token;
+		$bddtrans_credentials['token_created'] = $time;
+		file_put_contents($credentialsPath, json_encode($bddtrans_credentials, $json_flags));
+	}
+	error_log("Token expired after $token_age minutes. New token: " . $token);
 }
 
 if (!file_exists($commentsDbFile)) {
@@ -60,41 +65,37 @@ if (!file_exists($commentsDbFile)) {
 }
 $commentsDB = json_decode(file_get_contents($commentsDbFile), true);
 
-$comments = [];
-if (!empty($slug)) {
-	if (
-		empty($commentsDB[$slug])
-		OR $commentsDB[$slug]['updated'] < ($time - (60 * $comments_max_age))
-		OR empty($commentsDB[$slug]['comments'])
-	) {
-		$token = $bddtrans_credentials['token'];
-		$url = $base_url . '/' . $categorie . '/' . $slug . '.html';
+$commentsExpired = empty($commentsDB[$slug]) || $commentsDB[$slug]['updated'] < $time - 60 * $comments_max_age;
+if ($commentsExpired && !empty($token)) {
+	$url = $base_url . '/' . $categorie . '/' . $slug . '.html';
 
-		$commentsDB[$slug]['comments'] = getComments($url, $token);
-		$commentsDB[$slug]['updated'] = $time;
-		file_put_contents($commentsDbFile, json_encode($commentsDB, $json_flags));
-		error_log('Retrieving comments for ' . $slug);
-	}
-	$comments = $commentsDB[$slug]['comments'];
+	$commentsDB[$slug]['comments'] = getComments($url, $token);
+	$commentsDB[$slug]['updated'] = $time;
+	file_put_contents($commentsDbFile, json_encode($commentsDB, $json_flags));
+	error_log('Retrieving comments for ' . $slug);
+}
+
+if (empty($commentsDB[$slug])) {
+	echo '<div class="alert alert-danger">Commentaires non recuperer</div>';
+	exit;
 }
 
 if ($format == "json") {
 	header('Content-Type: application/json');
-	echo json_encode(empty($slug) ? $commentsDB : $comments, $json_flags);
+	echo json_encode([$slug => $commentsDB[$slug]], $json_flags);
+	exit;
 }
-else {
-	if (sizeof($comments) >= 1) {
-		echo '<div class="well well-sm">Derniere mise à jour de ces commentaires le '.date("d/m/Y à H:i:s", $commentsDB[$slug]['updated']).'</div>';
-		foreach ($comments as $com) {
-			echo '<div class="panel panel-default">';
-			echo '<div class="panel-heading">'.$com['tag'].'</div>';
-			echo '<div class="panel-body">';
-			echo nl2br($com['body']);
-			echo '</div>';
-			echo '</div>';
-		}
-	}
-	else {
-		echo '<p>Aucun commentaires</p>';
-	}
+
+$comments = $commentsDB[$slug]['comments'];
+echo '<div class="well well-sm">Derniere extraction des commentaires le '.date("d/m/Y à H:i:s", $commentsDB[$slug]['updated']).'</div>';
+if (sizeof($comments) < 1) {
+	echo '<div class="well well-sm">Aucun commentaires</div>';
+}
+foreach ($comments as $com) {
+	echo '<div class="panel panel-default">';
+	echo '<div class="panel-heading">'.$com['tag'].'</div>';
+	echo '<div class="panel-body">';
+	echo nl2br($com['body']);
+	echo '</div>';
+	echo '</div>';
 }

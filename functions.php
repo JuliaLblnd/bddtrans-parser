@@ -107,7 +107,7 @@ function getLoginToken($url, $login, $password)
 	curl_close($curl_handler);
 	
 	preg_match('/^Set-Cookie:.*token=([a-zA-Z0-9]{64});/mi', $result, $matches);
-	return $matches[1];
+	return $matches[1] ?? false;
 }
 
 /**
